@@ -157,7 +157,7 @@ Resources:
 
   # ビルドプロジェクト
   LambdaEdgeBuildProject:
-    Type: 'AWS::CodeBuild::Project'
+    Type: "AWS::CodeBuild::Project"
     Properties:
       Source:
         Type: "CODEPIPELINE"
@@ -183,27 +183,28 @@ Resources:
 
   # Code Buildのロール
   LambdaEdgeCodeBuildRole:
-    Type: 'AWS::IAM::Role'
+    Type: "AWS::IAM::Role"
     Properties:
       RoleName: !Sub "CodeBuild-LambdaEdge-${Environment}"
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
               Service: codebuild.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: "sts:AssumeRole"
       Policies:
         - PolicyName: CodeBuildAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - 'logs:CreateLogGroup'
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-                  - 's3:*'
-                  - 'lambda:UpdateFunctionCode'
-                  - 'cloudfront:UpdateDistribution'
-                Resource: '*'
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "s3:*"
+                  - "lambda:UpdateFunctionCode"
+                  - "cloudfront:UpdateDistribution"
+                  - "cloudfront:GetDistributionConfig"
+                Resource: "*"
