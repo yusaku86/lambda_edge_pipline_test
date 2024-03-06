@@ -1,0 +1,209 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "S3 bucket for function and redirect configuration, Pipeline"
+
+Parameters:
+  LogBucketName:
+    Type: String
+
+  CloudFrontId:
+    Type: String
+
+  LambdaName:
+    Type: String
+
+  # gitHubとの接続のArn
+  GitHubConnectionArn:
+    Type: String
+
+  # gitHubリポジトリのフルネーム
+  gitRepositoryFullName:
+    Type: String
+    Description: "The full name of the repository e.g. username/repository"
+
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - stg
+      - dev
+
+# マッピング
+Mappings:
+  # 連携するgitブランチ名
+  gitBranchMap:
+    environment:
+      prod: main
+      stg: stage
+      dev: develop
+
+Resources:
+  # リダイレクトの設定ファイルを保存するS3バケット
+  RedirectConfigBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Sub "redirect-config-${Environment}-${AWS::AccountId}"
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LogBucketName
+        LogFilePrefix: !Sub "S3AccessLogs/redirect-config-${Environment}-${AWS::AccountId}/"
+      Tags:
+        - Key: Env
+          Value: !Ref Environment
+
+################################################################
+# Code Pipeline関連
+################################################################
+  # Lambda@edgeをビルドしてCloudFrontに紐付けるパイプライン
+  LambdaEdgePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub "LambdaEdgePipeline-${Environment}"
+      PipelineType: V2
+      ArtifactStore:
+        Type: S3
+        Location: !Sub "redirect-config-${Environment}-${AWS::AccountId}"
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: "1"
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: !Ref gitRepositoryFullName
+                BranchName: !FindInMap [gitBranchMap, environment, !Ref Environment]
+                DetectChanges: true
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref LambdaEdgeBuildProject
+      Tags:
+        - Key: Env
+          Value: !Ref Environment
+
+  # パイプラインのRole
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "CodePipeLine-LambdaEdge-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [codepipeline.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Policies:
+        - PolicyName: CodePipelineLambdaEdgePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codepipeline:PutJobSuccessResult"
+                  - "codepipeline:PutJobFailureResult"
+                  - "codepipeline:PutJobInProgress"
+                  - "codepipeline:GetPipeline"
+                  - "codepipeline:GetPipelineExecution"
+                  - "codepipeline:GetPipelineState"
+                  - "codepipeline:PollForJobs"
+                  - "codepipeline:AcknowledgeJob"
+                  - "codebuild:StartBuild"
+                  - "codebuild:BatchGetBuilds"
+                  - "codebuild:StopBuild"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:DeleteNetworkInterface"
+                  - "ec2:AssignPrivateIpAddresses"
+                  - "ec2:UnassignPrivateIpAddresses"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:*:*:*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:GetBucketVersioning"
+                  - "s3:PutObject"
+                Resource: !Sub "arn:aws:s3:::redirect-config-${Environment}-${AWS::AccountId}/*"
+              - Effect: Allow
+                Action:
+                  - "cloudwatch:*"
+                  - "elasticloadbalancing:Describe*"
+                  - "autoscaling:Describe*"
+                  - "codestar-connections:UseConnection"
+                Resource: "*"
+
+  # ビルドプロジェクト
+  LambdaEdgeBuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Source:
+        Type: "CODEPIPELINE"
+        BuildSpec: "function/buildspec.yaml"
+      Artifacts:
+        Name: "LambdaEdge"
+        Type: "CODEPIPELINE"
+      Environment:
+        ComputeType: "BUILD_GENERAL1_SMALL"
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
+        ImagePullCredentialsType: "CODEBUILD"
+        Type: "LINUX_CONTAINER"
+        EnvironmentVariables:
+          - Name: "CLOUD_FRONT_ID"
+            Value: !Ref CloudFrontId
+          - Name: "FUNCTION_NAME"
+            Value: !Ref LambdaName
+      ServiceRole: !GetAtt LambdaEdgeCodeBuildRole.Arn
+      LogsConfig:
+        CloudWatchLogs:
+          Status: "ENABLED"
+          GroupName: !Sub "codebuild/redirect-lambda-edge"
+
+  # Code Buildのロール
+  LambdaEdgeCodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub "CodeBuild-LambdaEdge-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodeBuildAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                  - 's3:*'
+                  - 'lambda:UpdateFunctionCode'
+                  - 'cloudfront:UpdateDistribution'
+                Resource: '*'

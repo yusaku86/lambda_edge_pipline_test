@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Lambda function for redirection"
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - stg
+      - dev
+
+Resources:
+  # リダイレクトを実行するLambda
+  RedirectLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub Redirection-${Environment}
+      Handler: index.handler
+      Role: !GetAtt LambdaEdgeRole.Arn
+      Runtime: nodejs20.x
+      Code:
+        ZipFile: |
+          'use strict';
+          export function handler(event, context, callback) {
+            const request = event.Records[0].cf.request;
+            const uri = request.uri;
+
+            // /index.htmlへのアクセスの場合 => /にリダイレクト
+            if (uri.endsWith('/index.html')) {
+              const newUri = uri.replace(/\/index\.html$/, '/');
+              const response = {
+                status: '301',
+                statusDescription: 'Moved Permanently',
+                headers: {
+                  'location': [{
+                    key: 'Location',
+                    value: newUri,
+                  }],
+                  'cache-control': [{
+                    key: 'Cache-Control',
+                    value: "max-age=3600"
+                  }],
+                },
+              };
+              callback(null, response);
+            }
+            // URLの末尾が / で終わる場合、/index.htmlを参照する
+            else if (uri.endsWith('/')) {
+              request.uri += 'index.html';
+              callback(null, request);
+            } else {
+              callback(null, request);
+            }
+          }
+
+  # Lambdaのロール
+  LambdaEdgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "LambdaEdge-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ["lambda.amazonaws.com", "edgelambda.amazonaws.com"]
+            Action: ["sts:AssumeRole"]
+      Policies:
+        - PolicyName: LambdaEdgePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
