@@ -9,7 +9,7 @@ phases:
   post_build:
     commands:
       # ファイルをパッケージ化
-      - zip -r function.zip functions/index.mjs
+      - zip -r function.zip function/index.mjs
       # Lambdaを更新してArnを取得
       - FUNCTION_ARN=$(aws lambda update-function-code --function-name $FUNCTION_NAME --region us-east-1 --zip-file fileb://function.zip --publish --query 'FunctionArn' --output text)
       # CloudFrontの設定を取得
