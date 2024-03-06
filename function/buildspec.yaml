@@ -21,4 +21,4 @@ phases:
       # CloudFrontのEtagを取得
       - ETAG=$(aws cloudfront get-distribution-config --id $CLOUD_FRONT_ID --query 'ETag' --output text)
       # CloudFrontの設定を更新
-      - aws cloudfront update-distribution --id $CLOUDFRONT_DISTRIBUTION_ID --distribution-config "$UPDATED_CONFIG" --if-match $ETAG
+      - aws cloudfront update-distribution --id $CLOUD_FRONT_ID --distribution-config "$UPDATED_CONFIG" --if-match $ETAG
