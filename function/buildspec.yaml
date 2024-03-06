@@ -6,12 +6,13 @@ phases:
       nodejs: 20.x
     commands:
       - npm install -g aws-cli
-  post_build:
+  pre_build:
     commands:
       # ファイルをパッケージ化
       - zip -r function.zip function/index.mjs
       # Lambdaを更新してArnを取得
       - FUNCTION_ARN=$(aws lambda update-function-code --function-name $FUNCTION_NAME --region us-east-1 --zip-file fileb://function.zip --publish --query 'FunctionArn' --output text)
+      - export FUNCTION_ARN
       # CloudFrontの設定を取得
       - DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUD_FRONT_ID --query 'DistributionConfig' --output json)
       # 新しくCloudFrontの設定を作成(Lambda@Edgeの紐付けを変更)
@@ -20,5 +21,9 @@ phases:
       - UPDATED_CONFIG=$(echo $UPDATED_CONFIG | jq '.DefaultCacheBehavior.LambdaFunctionAssociations.Quantity = 1')
       # CloudFrontのEtagを取得
       - ETAG=$(aws cloudfront get-distribution-config --id $CLOUD_FRONT_ID --query 'ETag' --output text)
+      # LambdaのステータスがActiveになるまで待機
+      - node function/check-lambda-status.js
+  build:
+    commands:
       # CloudFrontの設定を更新
       - aws cloudfront update-distribution --id $CLOUD_FRONT_ID --distribution-config "$UPDATED_CONFIG" --if-match $ETAG
