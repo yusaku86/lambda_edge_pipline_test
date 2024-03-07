@@ -1,5 +1,5 @@
 'use strict';
-const fs = require('fs');
+import fs from 'fs';
 
 // リダイレクトルールのファイル読み込み
 const redirectRules = JSON.parse(fs.readFileSync('redirect-config.json', 'utf8'));
