@@ -179,6 +179,8 @@ Resources:
             Value: !Sub "redirect-config-${Environment}-${AWS::AccountId}"
           - Name: "REDIRECT_CONFIG_FILE"
             Value: "redirect-config.json"
+          - Name: "REGEX_REDIRECT_CONFIG_FILE"
+            Value: "regex-redirect-config.json"
       ServiceRole: !GetAtt LambdaEdgeCodeBuildRole.Arn
       LogsConfig:
         CloudWatchLogs:

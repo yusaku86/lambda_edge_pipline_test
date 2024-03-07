@@ -3,6 +3,7 @@ import fs from 'fs';
 
 // リダイレクトルールのファイル読み込み
 const redirectRules = JSON.parse(fs.readFileSync('redirect-config.json', 'utf8'));
+const regexRedirectRules = JSON.parse(fs.readFileSync('regex-redirect-config.json', 'utf8'));
 
 // ステータスメッセージ
 const statusMessage = {
@@ -36,6 +37,12 @@ export function handler(event, context, callback) {
             },
         };
         callback(null, response);
+        return;
+    }
+    // index.html以外のファイルの場合
+    else if (filePattern.test(uri)) {
+        callback(null, request);
+        return;
     }
     // ファイル以外でトレイリングスラッシュがない場合
     else if (!filePattern.test(uri) && !endsWithSlash.test(uri)) {
@@ -54,8 +61,9 @@ export function handler(event, context, callback) {
             },
         };
         callback(null, response);
+        return;
     }
-    // リダイレクトルールに含まれる場合
+    // 1対1のリダイレクトルールに含まれる場合
     else if(redirectRules[uri]) {
         const statuscode = redirectRules[uri].statuscode.toString();
 
@@ -70,12 +78,34 @@ export function handler(event, context, callback) {
             }
         };
         callback(null, response);
+        return;
+    }
+    // 正規表現を使用したリダイレクトルールに含まれる場合
+    for (const rule in regexRedirectRules) {
+        const regex = new RegExp(rule);
+        if (regex.test(uri)) {
+            const statuscode = redirectRules[uri].statuscode.toString();
+            const response = {
+                status: statuscode,
+                statusDescription: statusMessage[statuscode],
+                headers: {
+                    'location': [{
+                        key: 'Location',
+                        value: uri.replace(regex, replacement)
+                    }]
+                }
+            };
+            callback(null, response);
+            return;
+        }
     }
     // URLの末尾が / で終わる場合、/index.htmlを参照する
-    else if (uri.endsWith('/')) {
+    if (uri.endsWith('/')) {
         request.uri += 'index.html';
         callback(null, request);
+        return;
     } else {
         callback(null, request);
+        return;
     }
 }

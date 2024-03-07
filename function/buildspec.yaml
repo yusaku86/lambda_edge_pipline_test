@@ -16,9 +16,16 @@ phases:
         else
           echo "{}" > function/$REDIRECT_CONFIG_FILE
         fi
+
+        if aws s3 ls s3://$REDIRECT_CONFIG_BUCKET/$REGEX_REDIRECT_CONFIG_FILE; then
+          aws s3 cp s3://$REDIRECT_CONFIG_BUCKET/$REGEX_REDIRECT_CONFIG_FILE function/$REGEX_REDIRECT_CONFIG_FILE
+        else
+          echo "{}" > function/$REDIRECT_CONFIG_FILE
+        fi
+
       - cd function
       # ファイルのパッケージ化
-      - zip -r ../function.zip index.mjs $REDIRECT_CONFIG_FILE
+      - zip -r ../function.zip index.mjs $REDIRECT_CONFIG_FILE $REGEX_REDIRECT_CONFIG_FILE
       - cd ../
       # Lambdaを更新してArnを取得
       - FUNCTION_ARN=$(aws lambda update-function-code --function-name $FUNCTION_NAME --region us-east-1 --zip-file fileb://function.zip --publish --query 'FunctionArn' --output text)
