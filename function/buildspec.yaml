@@ -12,11 +12,14 @@ phases:
       # S3からリダイレクトの設定ファイルを取得(なければからのjsonオブジェクトを持つファイルを作成)
       - |
         if aws s3 ls s3://$REDIRECT_CONFIG_BUCKET/$REDIRECT_CONFIG_FILE; then
-          aws s3 cp s3://$REDIRECT_CONFIG_BUCKET/$REDIRECT_CONFIG_FILE .
+          aws s3 cp s3://$REDIRECT_CONFIG_BUCKET/$REDIRECT_CONFIG_FILE function/$REDIRECT_CONFIG_FILE
         else
-          echo "{}" > $REDIRECT_CONFIG_FILE
+          echo "{}" > function/$REDIRECT_CONFIG_FILE
         fi
-      - zip -r function.zip function/index.mjs $REDIRECT_CONFIG_FILE
+      - cd function
+      # ファイルのパッケージ化
+      - zip -r ../function.zip index.mjs $REDIRECT_CONFIG_FILE
+      - cd ../
       # Lambdaを更新してArnを取得
       - FUNCTION_ARN=$(aws lambda update-function-code --function-name $FUNCTION_NAME --region us-east-1 --zip-file fileb://function.zip --publish --query 'FunctionArn' --output text)
       - export FUNCTION_ARN
