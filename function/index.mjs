@@ -38,7 +38,7 @@ export function handler(event, context, callback) {
         callback(null, response);
     }
     // ファイル以外でトレイリングスラッシュがない場合
-    else if (filePattern.test(uri) && !endsWithSlash.test(uri)) {
+    else if (!filePattern.test(uri) && !endsWithSlash.test(uri)) {
         const response = {
             status: '301',
             statusDescription: 'Moved Permanently',
