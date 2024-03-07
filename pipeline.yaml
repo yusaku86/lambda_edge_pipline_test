@@ -175,6 +175,10 @@ Resources:
             Value: !Ref CloudFrontId
           - Name: "FUNCTION_NAME"
             Value: !Ref LambdaName
+          - Name: "REDIRECT_CONFIG_BUCKET"
+            Value: !Sub "redirect-config-${Environment}-${AWS::AccountId}"
+          - Name: "REDIRECT_CONFIG_FILE"
+            Value: "redirect-config.json"
       ServiceRole: !GetAtt LambdaEdgeCodeBuildRole.Arn
       LogsConfig:
         CloudWatchLogs:
