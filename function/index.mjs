@@ -10,6 +10,10 @@ const statusMessage = {
     "302": "Found"
 }
 
+const filePattern = /.*\.[^\/]*$/;
+
+const endsWithSlash = /\/$/;
+
 export function handler(event, context, callback) {
     const request = event.Records[0].cf.request;
     const uri = request.uri;
@@ -33,7 +37,25 @@ export function handler(event, context, callback) {
         };
         callback(null, response);
     }
-    // リダイレクトルールに含まれるか
+    // ファイル以外でトレイリングスラッシュがない場合
+    else if (filePattern.test(uri) && !endsWithSlash.test(uri)) {
+        const response = {
+            status: '301',
+            statusDescription: 'Moved Permanently',
+            headers: {
+                'location': [{
+                    key: 'Location',
+                    value: uri + '/',
+                }],
+                'cache-control': [{
+                    key: 'Cache-Control',
+                    value: "max-age=3600"
+                }],
+            },
+        };
+        callback(null, response);
+    }
+    // リダイレクトルールに含まれる場合
     else if(redirectRules[uri]) {
         const statuscode = redirectRules[uri].statuscode.toString();
 
