@@ -84,14 +84,14 @@ export function handler(event, context, callback) {
     for (const rule in regexRedirectRules) {
         const regex = new RegExp(rule);
         if (regex.test(uri)) {
-            const statuscode = redirectRules[uri].statuscode.toString();
+            const statuscode = regexRedirectRules[rule].statuscode.toString();
             const response = {
                 status: statuscode,
                 statusDescription: statusMessage[statuscode],
                 headers: {
                     'location': [{
                         key: 'Location',
-                        value: uri.replace(regex, redirectRules[uri].to)
+                        value: uri.replace(regex, regexRedirectRules[rule])
                     }]
                 }
             };
