@@ -1,13 +1,14 @@
-// check_lambda_status.js
-const AWS = require('aws-sdk');
-const lambda = new AWS.Lambda({region: 'us-east-1'});
+const { LambdaClient, GetFunctionCommand } = require("@aws-sdk/client-lambda");
+const client = new LambdaClient({ region: "us-east-1" });
 const functionArn = process.env.FUNCTION_ARN;
 
 async function checkLambdaStatus() {
     try {
-        const data = await lambda.getFunction({
+        const command = new GetFunctionCommand({
             FunctionName: functionArn,
-        }).promise();
+        });
+
+        const data = await client.send(command);
 
         if (data.Configuration.State === 'Active') {
             console.log('Function is active.');
