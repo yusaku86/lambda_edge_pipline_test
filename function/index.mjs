@@ -91,7 +91,7 @@ export function handler(event, context, callback) {
                 headers: {
                     'location': [{
                         key: 'Location',
-                        value: uri.replace(regex, regexRedirectRules[rule])
+                        value: uri.replace(regex, regexRedirectRules[rule].to)
                     }]
                 }
             };
