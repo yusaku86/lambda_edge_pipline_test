@@ -68,8 +68,10 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
         const regex = new RegExp(regexAccessUri);
         const randomAccessUri = new RandExp(regex).gen();
         const regexDestinationUri = randomAccessUri.replace(regex, replace);
+        console.log(regexDestinationUri);
 
         const callback = (error, response) => {
+            console.log(response);
             expect(error).toBeNull();
             expect(response.status).toBe(regexStatuscode.toString());
             expect(response.headers.location[0].value).toBe(regexDestinationUri);
