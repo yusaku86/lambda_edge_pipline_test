@@ -1,5 +1,5 @@
 'use strict';
-import fs from 'fs';
+const fs = require('fs');
 
 // リダイレクトルールのファイル読み込み
 const redirectRules = JSON.parse(fs.readFileSync('redirect-config.json', 'utf8'));
@@ -15,7 +15,7 @@ const filePattern = /.*\.[^\/]*$/;
 
 const endsWithSlash = /\/$/;
 
-export function handler(event, context, callback) {
+exports.handler = async (event, context, callback) => {
     const request = event.Records[0].cf.request;
     const uri = request.uri;
 
