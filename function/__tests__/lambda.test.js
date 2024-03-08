@@ -71,7 +71,7 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
 
         const callback = (error, response) => {
             expect(error).toBeNull();
-            expect(response.status).toBe(regexStatuscode);
+            expect(response.status).toBe(regexStatuscode.toString());
             expect(response.headers.location[0].value).toBe(regexDestinationUri);
             done();
         }
