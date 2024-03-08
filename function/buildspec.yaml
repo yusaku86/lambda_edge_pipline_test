@@ -8,9 +8,11 @@ phases:
       - npm install aws-cli
       - npm install @aws-sdk/client-lambda
       - npm install ajv
+      - npm install jest
+      - npm install randexp
   pre_build:
     commands:
-      # S3からリダイレクトの設定ファイルを取得(なければからのjsonオブジェクトを持つファイルを作成)
+      # S3からリダイレクトの設定ファイルを取得(なければ空のjsonオブジェクトを持つファイルを作成)
       - |
         if aws s3 ls s3://$REDIRECT_CONFIG_BUCKET/$REDIRECT_CONFIG_FILE; then
           aws s3 cp s3://$REDIRECT_CONFIG_BUCKET/$REDIRECT_CONFIG_FILE function/$REDIRECT_CONFIG_FILE
@@ -26,6 +28,9 @@ phases:
 
       - node function/validate-json-schema.js
       - cd function
+
+      # Lambdaの単体テスト
+      - npm run test
 
       # ファイルのパッケージ化
       - zip -r ../function.zip index.mjs $REDIRECT_CONFIG_FILE $REGEX_REDIRECT_CONFIG_FILE

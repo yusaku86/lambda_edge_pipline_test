@@ -27,7 +27,7 @@ const schema = {
 
 const validator = ajv.compile(schema);
 
-// リダイレクト設定が空か、スキーマに準拠している場合
+// リダイレクト設定が空もしくは、スキーマに準拠しているか判定
 if ((validator(redirectRule) || Object.keys(redirectRule).length === 0) && (validator(regexRedirectRule) || Object.keys(regexRedirectRule).length === 0)) {
     console.log("リダイレクト設定のJSON形式は有効です。")
 } else {
