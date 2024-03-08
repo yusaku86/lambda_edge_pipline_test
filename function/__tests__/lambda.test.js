@@ -1,4 +1,4 @@
-const { handler } = require('../index.mjs')
+const { handler } = require('../index.js')
 const fs = require('fs');
 const RandExp = require('randexp');
 
