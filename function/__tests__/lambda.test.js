@@ -66,9 +66,13 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
 
     test('正規表現を使用したリダイレクトルールに含まれるURLが正しくリダイレクトされるか', (done) => {
         const regex = new RegExp(regexAccessUri);
-        const randomAccessUri = new RandExp(regex).gen();
+        let randomAccessUri = new RandExp(regex).gen();
+        // トレイリングスラッシュを追加
+        if (!randomAccessUri.endsWith('/')) {
+            randomAccessUri += '/';
+        }
+
         const regexDestinationUri = randomAccessUri.replace(regex, replace);
-        console.log(regexDestinationUri);
 
         const callback = (error, response) => {
             console.log(response);
