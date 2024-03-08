@@ -1,3 +1,7 @@
+/**
+ * 更新したLambda@Edgeの状態を確認する(Activeになる前にCloudFrontとの紐付けを更新するとエラーが起きるため)
+ */
+
 const { LambdaClient, GetFunctionCommand } = require("@aws-sdk/client-lambda");
 const client = new LambdaClient({ region: "us-east-1" });
 const functionArn = process.env.FUNCTION_ARN;

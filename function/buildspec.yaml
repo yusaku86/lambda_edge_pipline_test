@@ -7,6 +7,7 @@ phases:
     commands:
       - npm install aws-cli
       - npm install @aws-sdk/client-lambda
+      - npm install ajv
   pre_build:
     commands:
       # S3からリダイレクトの設定ファイルを取得(なければからのjsonオブジェクトを持つファイルを作成)
@@ -23,6 +24,7 @@ phases:
           echo "{}" > function/$REDIRECT_CONFIG_FILE
         fi
 
+      - node function/validate-json-schema.js
       - cd function
       # ファイルのパッケージ化
       - zip -r ../function.zip index.mjs $REDIRECT_CONFIG_FILE $REGEX_REDIRECT_CONFIG_FILE

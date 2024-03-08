@@ -37,18 +37,6 @@ Mappings:
       dev: develop
 
 Resources:
-  # リダイレクトの設定ファイルを保存するS3バケット
-  RedirectConfigBucket:
-    Type: "AWS::S3::Bucket"
-    Properties:
-      BucketName: !Sub "redirect-config-${Environment}-${AWS::AccountId}"
-      LoggingConfiguration:
-        DestinationBucketName: !Ref LogBucketName
-        LogFilePrefix: !Sub "S3AccessLogs/redirect-config-${Environment}-${AWS::AccountId}/"
-      Tags:
-        - Key: Env
-          Value: !Ref Environment
-
 ################################################################
 # Code Pipeline関連
 ################################################################
@@ -155,6 +143,9 @@ Resources:
                   - "codestar-connections:UseConnection"
                 Resource: "*"
 
+################################################################
+# Code Build関連
+################################################################
   # ビルドプロジェクト
   LambdaEdgeBuildProject:
     Type: "AWS::CodeBuild::Project"
@@ -216,3 +207,101 @@ Resources:
                   - "cloudfront:UpdateDistribution"
                   - "cloudfront:GetDistributionConfig"
                 Resource: "*"
+
+###############################################################
+# その他
+###############################################################
+  # リダイレクトの設定ファイルを保存するS3バケット
+  RedirectConfigBucket:
+    Type: "AWS::S3::Bucket"
+    DependsOn: RunPipeLineLambdaPermission
+    Properties:
+      BucketName: !Sub "redirect-config-${Environment}-${AWS::AccountId}"
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LogBucketName
+        LogFilePrefix: !Sub "S3AccessLogs/redirect-config-${Environment}-${AWS::AccountId}/"
+      # リダイレクトの設定ファイルがアップロードされたらパイプラインを起動するLambdaを実行
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .json
+                  - Name: prefix
+                    Value: regex-redirect-config
+            Function:
+              !GetAtt RunPipeLineLambda.Arn
+      Tags:
+        - Key: Env
+          Value: !Ref Environment
+
+  # パイプライン起動するLambda
+  RunPipeLineLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub RunPipeline-${Environment}
+      Handler: index.handler
+      Runtime: nodejs20.x
+      Role: !GetAtt RunPipeLineLambdaRole.Arn
+      Environment:
+        Variables:
+          PIPELINE_NAME: !Ref LambdaEdgePipeline
+      Code:
+        ZipFile: |
+          'use strict';
+          const { CodePipelineClient, StartPipelineExecutionCommand } = require("@aws-sdk/client-codepipeline");
+          const client = new CodePipelineClient({ region: "ap-northeast-1" });
+
+          exports.handler = async (event) => {
+            try {
+              const command = new StartPipelineExecutionCommand({ name: process.env.PIPELINE_NAME });
+              // パイプライン実行
+              const response = await client.send(command);
+              console.log(`Pipeline execution started: ${response.pipelineExecutionId}`);
+            } catch (error) {
+              console.error(`Error starting pipeline: ${error}`);
+              throw error;
+            }
+          };
+
+  # パイプラインを起動するLambdaのロール
+  RunPipeLineLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "RunPipeLineLambda-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ["lambda.amazonaws.com"]
+            Action: ["sts:AssumeRole"]
+      Policies:
+        - PolicyName: RunPipeLineLambdaPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "codepipeline:StartPipelineExecution"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                Resource: !Sub "arn:aws:s3:::redirect-config-${Environment}-${AWS::AccountId}/*"
+
+  # パイプラインを起動するLambdaのリソースベースのポリシー
+  RunPipeLineLambdaPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: RunPipeLineLambda
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !Sub RunPipeline-${Environment}
+      Principal: "s3.amazonaws.com"
+      SourceAccount: !Ref "AWS::AccountId"
+      SourceArn: !Sub "arn:aws:s3:::redirect-config-${Environment}-${AWS::AccountId}"
