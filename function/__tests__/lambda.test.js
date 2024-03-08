@@ -2,8 +2,8 @@ const { handler } = require('../index.js')
 const fs = require('fs');
 const RandExp = require('randexp');
 
-const redirectRule = JSON.parse(fs.readFileSync(`../${process.env.REDIRECT_CONFIG_FILE}`, 'utf8'));
-const regexRedirectRule = JSON.parse(fs.readFileSync(`../${process.env.REGEX_REDIRECT_CONFIG_FILE}`, 'utf8'));
+const redirectRule = JSON.parse(fs.readFileSync(`${process.env.REDIRECT_CONFIG_FILE}`, 'utf8'));
+const regexRedirectRule = JSON.parse(fs.readFileSync(`${process.env.REGEX_REDIRECT_CONFIG_FILE}`, 'utf8'));
 
 // CloudFrontがLambdaに渡すイベント構造を作成する関数
 function createCloudFrontEvent(uri) {
