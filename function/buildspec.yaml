@@ -33,7 +33,7 @@ phases:
       - npm run test
 
       # ファイルのパッケージ化
-      - zip -r ../function.zip index.mjs $REDIRECT_CONFIG_FILE $REGEX_REDIRECT_CONFIG_FILE
+      - zip -r ../function.zip index.js $REDIRECT_CONFIG_FILE $REGEX_REDIRECT_CONFIG_FILE
       - cd ../
 
       # Lambdaを更新してArnを取得
