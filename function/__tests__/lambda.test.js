@@ -49,7 +49,7 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
     const destinationUri = redirectRule[accessUri].to;
     const statuscode = redirectRule[accessUri].statuscode.toString();
 
-    test('リダイレクトルールに含まれるURLが正しくリダイレクトされるか', () => {
+    test('リダイレクトルールに含まれるURLが正しくリダイレクトされるか', (done) => {
         const callback = (error, response) => {
             expect(error).toBeNull();
             expect(response.status).toBe(statuscode);
@@ -64,7 +64,7 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
     const replace = regexRedirectRule[regexAccessUri].to;
     const regexStatuscode = regexRedirectRule[regexAccessUri].statuscode;
 
-    test('正規表現を使用したリダイレクトルールに含まれるURLが正しくリダイレクトされるか', () => {
+    test('正規表現を使用したリダイレクトルールに含まれるURLが正しくリダイレクトされるか', (done) => {
         const regex = new RegExp(regexAccessUri);
         const randomAccessUri = new RandExp(regex).gen();
         const regexDestinationUri = randomAccessUri.replace(regex, replace);
