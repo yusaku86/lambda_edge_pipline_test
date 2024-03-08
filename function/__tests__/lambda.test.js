@@ -45,7 +45,8 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
 
     // 1対1のリダイレクトルールに含まれるURLがリダイレクトされるか
     const accessUri = Object.keys(redirectRule)[0];
-    console.log(redirectRule.accessUri);
+    console.log(accessUri);
+    console.log(redirectRule[accessUri]);
     const destinationUri = redirectRule.accessUri.to;
     const statuscode = redirectRule.accessUri.statuscode.toString();
 
