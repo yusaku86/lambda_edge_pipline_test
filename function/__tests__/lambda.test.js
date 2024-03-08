@@ -44,11 +44,10 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
     });
 
     // 1対1のリダイレクトルールに含まれるURLがリダイレクトされるか
+    console.log(redirectRule);
     const accessUri = Object.keys(redirectRule)[0];
-    console.log(accessUri);
-    console.log(redirectRule[accessUri]);
-    const destinationUri = redirectRule.accessUri.to;
-    const statuscode = redirectRule.accessUri.statuscode.toString();
+    const destinationUri = redirectRule[accessUri][to];
+    const statuscode = redirectRule[accessUri][statuscode].toString();
 
     test('リダイレクトルールに含まれるURLが正しくリダイレクトされるか', () => {
         const callback = (error, response) => {
@@ -62,8 +61,8 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
 
     // 正規表現のリダイレクトルールに含まれるURLがリダイレクトされるか
     const regexAccessUri = Object.keys(regexRedirectRule)[0];
-    const replace = regexRedirectRule.regexAccessUri.to;
-    const regexStatuscode = regexRedirectRule.regexAccessUri.statuscode;
+    const replace = regexRedirectRule[regexAccessUri][to];
+    const regexStatuscode = regexRedirectRule[regexAccessUri][statuscode];
 
     test('正規表現を使用したリダイレクトルールに含まれるURLが正しくリダイレクトされるか', () => {
         const regex = new RegExp(regexAccessUri);
