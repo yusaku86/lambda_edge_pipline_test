@@ -31,6 +31,6 @@ const validator = ajv.compile(schema);
 if ((validator(redirectRule) || Object.keys(redirectRule).length === 0) && (validator(regexRedirectRule) || Object.keys(regexRedirectRule).length === 0)) {
     console.log("リダイレクト設定のJSON形式は有効です。")
 } else {
-    console.error('リダイレクト設定のJSON形式は無効です:', validate.errors);
+    console.error('リダイレクト設定のJSON形式は無効です:', validator.errors);
     process.exit(1);
 }

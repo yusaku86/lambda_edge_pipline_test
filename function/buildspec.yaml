@@ -26,20 +26,26 @@ phases:
 
       - node function/validate-json-schema.js
       - cd function
+
       # ファイルのパッケージ化
       - zip -r ../function.zip index.mjs $REDIRECT_CONFIG_FILE $REGEX_REDIRECT_CONFIG_FILE
       - cd ../
+
       # Lambdaを更新してArnを取得
       - FUNCTION_ARN=$(aws lambda update-function-code --function-name $FUNCTION_NAME --region us-east-1 --zip-file fileb://function.zip --publish --query 'FunctionArn' --output text)
       - export FUNCTION_ARN
+
       # CloudFrontの設定を取得
       - DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUD_FRONT_ID --query 'DistributionConfig' --output json)
+
       # 新しくCloudFrontの設定を作成(Lambda@Edgeの紐付けを変更)
       - UPDATED_CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DefaultCacheBehavior.LambdaFunctionAssociations.Items[0].LambdaFunctionARN = "'$FUNCTION_ARN'"')
       - UPDATED_CONFIG=$(echo $UPDATED_CONFIG | jq '.DefaultCacheBehavior.LambdaFunctionAssociations.Items[0].EventType = "viewer-request"')
       - UPDATED_CONFIG=$(echo $UPDATED_CONFIG | jq '.DefaultCacheBehavior.LambdaFunctionAssociations.Quantity = 1')
+
       # CloudFrontのEtagを取得
       - ETAG=$(aws cloudfront get-distribution-config --id $CLOUD_FRONT_ID --query 'ETag' --output text)
+
       # LambdaのステータスがActiveになるまで待機
       - node function/check-lambda-status.js
   build:
