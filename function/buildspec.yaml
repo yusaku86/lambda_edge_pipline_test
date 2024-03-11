@@ -6,26 +6,16 @@ phases:
       nodejs: 20.x
     commands:
       - npm install aws-cli
-      - npm install @aws-sdk/client-lambda
+      - npm install @aws-sdk/client-lambda @aws-sdk/client-s3 @aws-sdk/lib-storage
       - npm install ajv
       - npm install jest
       - npm install randexp
   pre_build:
     commands:
-      # S3からリダイレクトの設定ファイルを取得(なければ空のjsonオブジェクトを持つファイルを作成)
-      - |
-        if aws s3 ls s3://$REDIRECT_CONFIG_BUCKET/$REDIRECT_CONFIG_FILE; then
-          aws s3 cp s3://$REDIRECT_CONFIG_BUCKET/$REDIRECT_CONFIG_FILE function/$REDIRECT_CONFIG_FILE
-        else
-          echo "{}" > function/$REDIRECT_CONFIG_FILE
-        fi
+      # S3から各WPのリダイレクト設定ファイルを取得してまとめる
+      - node function/create-redirect-config.js
 
-        if aws s3 ls s3://$REDIRECT_CONFIG_BUCKET/$REGEX_REDIRECT_CONFIG_FILE; then
-          aws s3 cp s3://$REDIRECT_CONFIG_BUCKET/$REGEX_REDIRECT_CONFIG_FILE function/$REGEX_REDIRECT_CONFIG_FILE
-        else
-          echo "{}" > function/$REDIRECT_CONFIG_FILE
-        fi
-
+      # リダイレクト設定ファイルのjsonスキーマの検証
       - node function/validate-json-schema.js
       - cd function
 

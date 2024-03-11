@@ -228,9 +228,7 @@ Resources:
               S3Key:
                 Rules:
                   - Name: suffix
-                    Value: .json
-                  - Name: prefix
-                    Value: regex-redirect-config
+                    Value: regex-redirect-config.json
             Function:
               !GetAtt RunPipeLineLambda.Arn
       Tags:
