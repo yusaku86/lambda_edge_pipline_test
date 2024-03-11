@@ -28,7 +28,7 @@ async function createRedirectConfig() {
 
         const listCommand = new ListObjectsV2Command(listParams);
         const listResponse = await client.send(listCommand);
-
+        console.log(listResponse);
         for (const content of listResponse.Contents) {
             if (content.Key.endsWith('regex-redirect-config.json')) {
                 isRegex = true;
