@@ -44,43 +44,47 @@ describe('リダイレクト用Lambdaの単体テスト', () => {
     });
 
     // 1対1のリダイレクトルールに含まれるURLがリダイレクトされるか
-    const accessUri = Object.keys(redirectRule)[0];
-    const destinationUri = redirectRule[accessUri].to;
-    const statuscode = redirectRule[accessUri].statuscode.toString();
+    if (Object.keys(redirectRule).length > 0) {
+        const accessUri = Object.keys(redirectRule)[0];
+        const destinationUri = redirectRule[accessUri].to;
+        const statuscode = redirectRule[accessUri].statuscode.toString();
 
-    test('リダイレクトルールに含まれるURLが正しくリダイレクトされるか', (done) => {
-        const callback = (error, response) => {
-            expect(error).toBeNull();
-            expect(response.status).toBe(statuscode);
-            expect(response.headers.location[0].value).toBe(destinationUri);
-            done();
-        }
-        handler(createCloudFrontEvent(accessUri), {}, callback);
-    });
+        test('リダイレクトルールに含まれるURLが正しくリダイレクトされるか', (done) => {
+            const callback = (error, response) => {
+                expect(error).toBeNull();
+                expect(response.status).toBe(statuscode);
+                expect(response.headers.location[0].value).toBe(destinationUri);
+                done();
+            }
+            handler(createCloudFrontEvent(accessUri), {}, callback);
+        });
+    }
 
     // 正規表現のリダイレクトルールに含まれるURLがリダイレクトされるか
-    const regexAccessUri = Object.keys(regexRedirectRule)[0];
-    const replace = regexRedirectRule[regexAccessUri].to;
-    const regexStatuscode = regexRedirectRule[regexAccessUri].statuscode;
+    if (Object.keys(regexRedirectRule).length > 0) {
+        const regexAccessUri = Object.keys(regexRedirectRule)[0];
+        const replace = regexRedirectRule[regexAccessUri].to;
+        const regexStatuscode = regexRedirectRule[regexAccessUri].statuscode;
 
-    test('正規表現を使用したリダイレクトルールに含まれるURLが正しくリダイレクトされるか', (done) => {
-        const regex = new RegExp(regexAccessUri);
-        let randomAccessUri = new RandExp(regex).gen();
-        // トレイリングスラッシュを追加
-        if (!randomAccessUri.endsWith('/')) {
-            randomAccessUri += '/';
-        }
+        test('正規表現を使用したリダイレクトルールに含まれるURLが正しくリダイレクトされるか', (done) => {
+            const regex = new RegExp(regexAccessUri);
+            let randomAccessUri = new RandExp(regex).gen();
+            // トレイリングスラッシュを追加
+            if (!randomAccessUri.endsWith('/')) {
+                randomAccessUri += '/';
+            }
 
-        const regexDestinationUri = randomAccessUri.replace(regex, replace);
+            const regexDestinationUri = randomAccessUri.replace(regex, replace);
 
-        const callback = (error, response) => {
-            expect(error).toBeNull();
-            expect(response.status).toBe(regexStatuscode.toString());
-            expect(response.headers.location[0].value).toBe(regexDestinationUri);
-            done();
-        }
-        handler(createCloudFrontEvent(randomAccessUri), {}, callback);
-    });
+            const callback = (error, response) => {
+                expect(error).toBeNull();
+                expect(response.status).toBe(regexStatuscode.toString());
+                expect(response.headers.location[0].value).toBe(regexDestinationUri);
+                done();
+            }
+            handler(createCloudFrontEvent(randomAccessUri), {}, callback);
+        });
+    }
 
     // index.html以外のファイルがそのままアクセスできるか
     test('index.html以外のファイルがそのままアクセスできるか', (done) => {
